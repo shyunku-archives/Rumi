@@ -1,20 +1,18 @@
 package services.rumi;
 
 public class RumiResponseEvent {
-    private String targetName;
     private String targetId;
+    private double certainty;
+
+    private double finishCertainty;
     private String reply;
     private Emotion emotionWeight;
 
-    public RumiResponseEvent(String targetName, String targetId, String reply, Emotion emotionWeight) {
-        this.targetName = targetName;
-        this.targetId = targetId;
-        this.reply = reply;
-        this.emotionWeight = emotionWeight;
+    public RumiResponseEvent() {
     }
 
-    public String getTargetName() {
-        return targetName;
+    public double getCertainty() {
+        return certainty;
     }
 
     public String getTargetId() {
@@ -27,5 +25,9 @@ public class RumiResponseEvent {
 
     public Emotion getEmotionWeight() {
         return emotionWeight;
+    }
+
+    public double getFinishCertainty() {
+        return finishCertainty;
     }
 }

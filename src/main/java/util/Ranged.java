@@ -1,5 +1,7 @@
 package util;
 
+import com.fasterxml.jackson.databind.JsonSerializer;
+
 public class Ranged {
     private static final double FLUCTUATION_RATE = 0.5;
 
@@ -29,7 +31,7 @@ public class Ranged {
         setCurrent(current + fluctuation * FLUCTUATION_RATE);
     }
 
-    private void setCurrent(double current) {
+    protected void setCurrent(double current) {
         if(current < min) {
             current = min;
         }

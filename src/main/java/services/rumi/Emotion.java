@@ -1,8 +1,17 @@
 package services.rumi;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 public class Emotion {
+    @JsonSerialize(using = StdRanged.Serializer.class)
+    @JsonDeserialize(using = StdRanged.Deserializer.class)
     private StdRanged likability = new StdRanged();
+    @JsonSerialize(using = StdRanged.Serializer.class)
+    @JsonDeserialize(using = StdRanged.Deserializer.class)
     private StdRanged friendliness = new StdRanged();
+    @JsonSerialize(using = StdRanged.Serializer.class)
+    @JsonDeserialize(using = StdRanged.Deserializer.class)
     private StdRanged trust = new StdRanged();
 
     public Emotion() {

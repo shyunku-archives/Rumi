@@ -16,6 +16,7 @@ import javax.security.auth.login.LoginException;
 
 public class RumiBot {
     public static Rumi soul = new Rumi();
+    public static long globalMessageIndex = 0;
 
     public static void main(String[] args) throws LoginException {
         Logger.info("Starting Rumi Bot...");
@@ -32,7 +33,8 @@ public class RumiBot {
 
         JDABuilder builder = JDABuilder.createDefault(Environment.DISCORD_BOT_TOKEN)
                 .enableIntents(GatewayIntent.GUILD_MESSAGES)
-                .enableIntents(GatewayIntent.DIRECT_MESSAGES)
+                .disableIntents(GatewayIntent.DIRECT_MESSAGES)
+//                .enableIntents(GatewayIntent.DIRECT_MESSAGES)
                 .addEventListeners(new InternalEventListener());
 
         if (Environment.PRODUCTION_MODE) {
