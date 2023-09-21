@@ -59,7 +59,7 @@ public class InternalEventListener extends ListenerAdapter {
                     MessageEmbed embed = eb.build();
                     // send direct message
                     e.getUser().openPrivateChannel().complete().sendMessageEmbeds(embed).queue();
-                    e.deferReply().queue();
+                    e.reply("DM으로 내용을 전송했습니다.").queue();
                 } catch (Exception ex) {
                     Logger.error(ex.getMessage());
                 }
@@ -78,8 +78,10 @@ public class InternalEventListener extends ListenerAdapter {
         String rawMessage = message.getContentRaw();
         long messageIndex = RumiBot.globalMessageIndex++;
 
+
         if(sender == null) return;
         if(rawMessage.length() == 0) return;
+        if(sender.getUser().isBot()) return;
         Logger.debugf("[%s/%s] %s(%s): %s",
                 guild.getName(),
                 textChannel.getName(),
@@ -92,6 +94,7 @@ public class InternalEventListener extends ListenerAdapter {
 
         // check if this is mentioned message
         boolean rumiMentioned = false;
+        boolean rumiIncluded = displayedMessage.contains("루미");
         List<Member> mentionedMembers = message.getMentions().getMembers();
         if (!mentionedMembers.isEmpty()) {
             for (Member mentionedMember : mentionedMembers) {
@@ -102,7 +105,7 @@ public class InternalEventListener extends ListenerAdapter {
             }
         }
 
-        if(rumiMentioned) {
+        if(rumiMentioned || rumiIncluded) {
             Logger.debugf("Rumi mentioned by %s", sender.getEffectiveName());
             LastCertainMessageInfo mentionInfo = new LastCertainMessageInfo(
                     messageIndex,
@@ -110,43 +113,60 @@ public class InternalEventListener extends ListenerAdapter {
             );
             RumiBot.soul.registerLastMentionedMessage(sender.getUser().getId(), mentionInfo);
 
-            try {
-                AudioChannel audioChannel = JdaUtil.GetUserAudioChannel(sender);
+            if(rumiMentioned) {
+                try {
+                    AudioChannel audioChannel = JdaUtil.GetUserAudioChannel(sender);
 
-                if(audioChannel != null) {
-                    // join audio channel (if rumi has enough friendliness and willing to join audio channel for sender)
-                    // this willingness is determined by the emotion of rumi for the sender
-                    if(emotion.getFriendliness().getCurrent() > -0.5) {
-                        audioChannel.getGuild().getAudioManager().openAudioConnection(audioChannel);
-                    } else {
-                        Logger.debugf("Rumi is not willing to join audio channel for %s, (friendliness: %.2f)",
-                                sender.getEffectiveName(), emotion.getFriendliness().getCurrent());
+                    if (audioChannel != null) {
+                        // join audio channel (if rumi has enough friendliness and willing to join audio channel for sender)
+                        // this willingness is determined by the emotion of rumi for the sender
+                        if (emotion.getFriendliness().getCurrent() > -0.5) {
+                            audioChannel.getGuild().getAudioManager().openAudioConnection(audioChannel);
+                        } else {
+                            Logger.debugf("Rumi is not willing to join audio channel for %s, (friendliness: %.2f)",
+                                    sender.getEffectiveName(), emotion.getFriendliness().getCurrent());
+                        }
                     }
+                } catch (MemberNotFoundException ex) {
+                    throw new RuntimeException(ex);
                 }
-            } catch (MemberNotFoundException ex) {
-                throw new RuntimeException(ex);
             }
         }
 
         double certainty = RumiBot.soul.getCertaintyForAcceptingForRumi(sender.getId());
+        if(rumiMentioned) {
+            certainty = 1.0;
+        } else if (rumiIncluded) {
+            certainty = 0.8;
+        }
+
         if(certainty < Environment.RUMI_PREDICT_CERTAINTY_THRESHOLD) {
             if(certainty > 0) {
                 Logger.debugf("Rumi is not willing to respond to this. (certainty: %.3f%%)", certainty * 100);
             } else {
                 // ignored
+                Logger.debugf("Rumi ignored this message. (certainty: %.3f%%)", certainty * 100);
             }
         } else {
             try {
                 // get message content with removing mention in this scope
                 String messageContent = JdaUtil.removeMention(rawMessage);
                 // just chat
-                String content = rumiMentioned ? "Action:(대상이 루미를 부름) + " + messageContent : displayedMessage;
+                String content = "";
+                if(rumiMentioned) {
+                    content = "Action:(대상이 루미를 부름) + ";
+                } else if (rumiIncluded) {
+                    content = "Action:(대상이 메시지 중 루미를 언급함) + ";
+                }
+                content = content + messageContent;
                 RumiAcceptEvent acceptEvent = new RumiAcceptEvent(
                         sender,
                         false,
                         certainty,
                         content
                 );
+
+                Logger.debug("Rumi is thinking response about this message...");
                 String response = RumiBot.soul.respond(acceptEvent);
                 if (response != null) {
                     textChannel.sendMessage(response).queue();

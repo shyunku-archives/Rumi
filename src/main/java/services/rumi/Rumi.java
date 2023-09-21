@@ -66,6 +66,7 @@ public class Rumi {
         RumiResponseEvent response = null;
         try {
             response = getResponseFromGPT(e);
+            this.applyEmotionTransition(response);
             if(response.getReply().isEmpty() || response.getCertainty() < 0.5) {
                 Logger.debugf("Rumi is not certain enough to respond to %s (certainty: %f%%)", e.getTalker(), response.getCertainty() * 100);
                 this.removeLastMentionedMessage(e.getTalkerId());
@@ -78,9 +79,13 @@ public class Rumi {
             }
             // add response to history
             String rawReply = response.getReply();
-            String reply = String.format("%s [certainty: %.0f%%, finish: %.0f%%]", rawReply, response.getCertainty() * 100, response.getFinishCertainty() * 100);
+            Emotion emotion = response.getEmotionWeight();
+            String reply = String.format("%s [CERT: %.0f%%, FIN: %.0f%%, EMOTE_W(L:%.0f, F:%.0f, T:%.0f)]",
+                    rawReply, response.getCertainty() * 100, response.getFinishCertainty() * 100,
+                    emotion.getLikability().getCurrent() * 100,
+                    emotion.getFriendliness().getCurrent() * 100,
+                    emotion.getTrust().getCurrent() * 100);
             this.registerConversation(e.getTalker(), new ConversationEntity(GPT.Role.ASSISTANT, rawReply));
-            this.applyEmotionTransition(response);
             return reply;
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -106,8 +111,8 @@ public class Rumi {
                 GPT.Model.GPT_4,
                 messages,
                 1.2,
-                0.5,
-                0.5,
+                1.0,
+                1.5,
                 false
         );
         GPT.Response.CompletionResponse gptResp = GPT.response(gptReq);

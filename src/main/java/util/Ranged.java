@@ -3,7 +3,7 @@ package util;
 import com.fasterxml.jackson.databind.JsonSerializer;
 
 public class Ranged {
-    private static final double FLUCTUATION_RATE = 0.5;
+    private static final double FLUCTUATION_RATE = 0.2;
 
     private double current;
     private double min;
